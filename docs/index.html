@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Classiq — DemandGen Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#191919; --panel:#202020; --panel-2:#242424;
+    --border:#333330; --border-soft:#2b2b28;
+    --text:#f5f5f0; --muted:#9d9d94; --xmuted:#6f6f68;
+    --lime:#D7F75B; --lime-dim:rgba(215,247,91,.16); --lime-deep:#aac741;
+    --teal:#5eead4; --amber:#f5c451; --red:#f87171; --slate:#7ba7d1;
+    --radius:10px;
+    --font:'Lato',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#0f0f0f;color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:26px;}
+  .card{max-width:1500px;margin:0 auto;background:var(--bg);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;border:1px solid var(--border-soft);}
+  .hero{padding:30px 36px 26px;background:var(--bg);border-bottom:1px solid var(--border);position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+  .hero::after{content:"";position:absolute;left:36px;bottom:-1px;width:52px;height:3px;background:var(--lime);}
+  .hero .kick{font-size:11px;text-transform:uppercase;letter-spacing:.18em;color:var(--lime);font-weight:700;}
+  .hero h1{margin:10px 0 4px;font-size:27px;font-weight:900;letter-spacing:-.01em;}
+  .hero .date{font-size:13px;color:var(--muted);}
+  .hero .updated{font-size:11px;color:var(--xmuted);text-align:right;white-space:nowrap;}
+
+  .body{padding:28px 36px 36px;}
+
+  .block-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;margin:0 0 10px;}
+  .stat-block{margin-bottom:22px;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .stat{padding:16px 18px 14px;background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);cursor:pointer;transition:all .12s ease;user-select:none;}
+  .stat:hover{border-color:#54544c;}
+  .stat.active{border-color:var(--lime);background:var(--lime-dim);}
+  .stat .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+  .stat .value{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;margin-top:6px;letter-spacing:-.02em;line-height:1;}
+  .stat .value.lime{color:var(--lime);}
+  .stat .value.amber{color:var(--amber);}
+  .stat .value.red{color:var(--red);}
+  .stat .value.muted{color:var(--muted);}
+  .stat .sub{font-size:11px;color:var(--xmuted);margin-top:5px;}
+  .stat.active .sub{color:var(--lime-deep);}
+
+  .filter-bar{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:26px;}
+  .filter-group{display:flex;flex-direction:column;gap:6px;}
+  .filter-group label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;}
+  .filter-group select{
+    font-family:var(--font);font-size:13px;font-weight:700;color:var(--text);
+    background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239d9d94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;
+    background-size:14px;border:1px solid var(--border);border-radius:8px;
+    padding:9px 34px 9px 13px;min-width:210px;cursor:pointer;appearance:none;-webkit-appearance:none;
+    transition:border-color .12s ease;
+  }
+  .filter-group select:hover{border-color:#54544c;}
+  .filter-group select:focus{outline:none;border-color:var(--lime);}
+  .filter-group select option{background:var(--panel);color:var(--text);}
+
+  .board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;align-items:start;margin-top:22px;}
+  .col{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:12px;min-height:60px;}
+  .col-head{display:flex;align-items:center;gap:8px;padding:2px 4px 12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+  .col-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .col-title{font-size:12.5px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;flex:1;}
+  .col-count{font-size:11px;font-weight:900;color:var(--xmuted);background:var(--panel-2);border-radius:999px;padding:1px 8px;}
+  .col-empty{font-size:12px;color:var(--xmuted);padding:10px 4px;text-align:center;}
+
+  .pcard{background:var(--panel-2);border:1px solid var(--border-soft);border-left:3px solid var(--border-soft);border-radius:9px;padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:opacity .12s ease, border-color .12s ease, box-shadow .12s ease, transform .12s ease;}
+  .pcard:hover{border-color:#54544c;transform:translateY(-1px);}
+  .pcard:last-child{margin-bottom:0;}
+  .pcard.dim{opacity:.32;}
+  .pcard.urgency-now{border-left-color:var(--red);}
+  .pcard.urgency-soon{border-left-color:var(--amber);}
+  .pcard.urgency-later{border-left-color:var(--xmuted);}
+  .pcard.pinned{border-color:var(--lime);box-shadow:0 0 0 1px rgba(215,247,91,.25);}
+  .ptitle-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .pcard .ptitle{font-size:13.5px;font-weight:900;letter-spacing:-.005em;line-height:1.3;}
+  .pin-btn{background:none;border:none;padding:0;margin:0;flex:none;font-size:16px;line-height:1;color:var(--xmuted);cursor:pointer;transition:color .12s ease,transform .12s ease;}
+  .pin-btn:hover{color:var(--lime);transform:scale(1.15);}
+  .pin-btn.pinned{color:var(--lime);}
+  .ptags{display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap;}
+  .tag{font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:5px;border:1px solid var(--border);color:var(--muted);}
+  .scope-badge{font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:5px;border:1px solid var(--border);color:var(--xmuted);}
+  .scope-badge.project{color:#191919;background:var(--lime);border-color:var(--lime);}
+  .pnext{font-size:12px;color:#c8c8c0;line-height:1.55;margin-bottom:11px;}
+  .pbar-track{height:5px;background:var(--border-soft);border-radius:99px;overflow:hidden;}
+  .pbar-fill{height:100%;background:var(--lime);border-radius:99px;}
+  .pprogress{margin-bottom:11px;}
+  .pprogress-top{display:flex;justify-content:space-between;font-size:10.5px;color:var(--xmuted);margin-bottom:5px;font-weight:700;}
+  .pprogress-next{font-size:11.5px;color:var(--muted);margin-top:7px;font-style:italic;}
+  .pfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .deadline{font-size:10.5px;font-weight:800;letter-spacing:.02em;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  .deadline.eonw{color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);}
+  .deadline.recurring{color:var(--teal);background:rgba(94,234,212,.1);border:1px solid rgba(94,234,212,.35);}
+  .deadline.text{color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);}
+  .deadline.soon{color:var(--amber);background:rgba(245,196,81,.12);border:1px solid rgba(245,196,81,.4);}
+  .deadline.urgent{color:var(--red);background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);}
+  .deadline.ok{color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);}
+  .plink{font-size:11px;font-weight:800;color:var(--lime);text-decoration:none;white-space:nowrap;}
+  .plink:hover{text-decoration:underline;}
+  .plink.disabled{color:var(--xmuted);cursor:default;}
+
+  .pq-panel{background:var(--lime-dim);border:1px solid rgba(215,247,91,.35);border-radius:var(--radius);padding:16px 18px;margin-bottom:26px;}
+  .pq-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+  .pq-title{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--lime);font-weight:700;}
+  .pq-hint{font-size:11px;color:var(--xmuted);}
+  .pq-empty{font-size:12.5px;color:var(--xmuted);padding:6px 0 2px;}
+  .pq-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:10px;}
+  .pq-item{background:var(--panel-2);border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;cursor:pointer;transition:border-color .12s ease;}
+  .pq-item:hover{border-color:#54544c;}
+  .pq-item .pq-name{font-size:12.5px;font-weight:800;line-height:1.35;}
+  .pq-item .pq-meta{font-size:10.5px;color:var(--xmuted);margin-top:3px;}
+
+  .foot{margin-top:26px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--xmuted);line-height:1.7;}
+  .foot b{color:var(--muted);}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(10,10,10,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:24px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--bg);border:1px solid var(--border-soft);border-radius:14px;max-width:580px;width:100%;max-height:85vh;overflow-y:auto;padding:28px 30px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+  .modal-close{position:absolute;top:18px;right:18px;background:none;border:none;color:var(--xmuted);font-size:22px;line-height:1;cursor:pointer;padding:2px;}
+  .modal-close:hover{color:var(--text);}
+  .modal-title{font-size:20px;font-weight:900;letter-spacing:-.01em;margin:0 30px 12px 0;}
+  .modal-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .modal-status{font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:5px;display:inline-flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--border);}
+  .modal-status .dot{width:7px;height:7px;border-radius:50%;}
+  .modal-section-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin:20px 0 10px;}
+  .modal-next{font-size:13px;color:#d8d8d0;line-height:1.6;}
+  .modal-progress-top{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:700;}
+  .step-row{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:1px solid var(--border-soft);}
+  .step-row:last-child{border-bottom:none;}
+  .step-check{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex:none;color:transparent;margin-top:1px;}
+  .step-row.done .step-check{background:var(--lime);border-color:var(--lime);color:#191919;}
+  .step-row.done .step-text{color:var(--xmuted);text-decoration:line-through;text-decoration-color:var(--border);}
+  .step-text{font-size:13px;line-height:1.5;padding-top:1px;}
+  .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+  .modal-foot .plink{font-size:12.5px;}
+
+  @media (max-width:1300px){.board{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:1100px){.stats{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:900px){.board{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:640px){.board{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="hero">
+    <div>
+      <div class="kick">Classiq · Demand Gen</div>
+      <h1>DemandGen Dashboard</h1>
+      <div class="date">Project status across owned initiatives</div>
+    </div>
+    <div class="updated" id="updatedStamp"></div>
+  </div>
+
+  <div class="body">
+
+    <div class="pq-panel">
+      <div class="pq-head">
+        <span class="pq-title">Your Priority Queue</span>
+        <span class="pq-hint">click ★ on any card below to pin / unpin</span>
+      </div>
+      <div id="priorityQueue"></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label for="timelineSelect">Timeline</label>
+        <select id="timelineSelect"></select>
+      </div>
+      <div class="filter-group">
+        <label for="ownerSelect">Ownership</label>
+        <select id="ownerSelect"></select>
+      </div>
+      <div class="filter-group">
+        <label for="scopeSelect">Scope of work</label>
+        <select id="scopeSelect"></select>
+      </div>
+    </div>
+
+    <div class="stat-block">
+      <div class="block-label">Status Overview</div>
+      <div class="stats" id="stats"></div>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="foot">
+      <b>How to use:</b> click any card to open it and see the full step-by-step checklist — done steps are checked off, what's left shows what's still missing. Click ★ to pin it to your Priority Queue up top — that's yours to arrange your schedule, independent of status or deadline, and it's saved in this browser. Use the Timeline / Ownership / Scope dropdowns to filter the board — they combine. Click a "Status Overview" tile to highlight matching cards (click again to reset).
+      The colored left edge of each card shows urgency: <span class="legend"><span><span class="dot" style="background:var(--red);"></span>due this week</span><span><span class="dot" style="background:var(--amber);"></span>due next week</span><span><span class="dot" style="background:var(--xmuted);"></span>due later / TBD</span></span>
+      <br><br>
+      This file is manually maintained — edit the <code>PROJECTS</code> array in the script, or ask Claude to update it, whenever a status, urgency, or next step changes.
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<script>
+const STATUS_ORDER = ["live","ongoing","waiting","stuck","notstarted","inqueue"];
+const STATUS_CONFIG = {
+  live:       { label:"Live",           color:"var(--lime)"  },
+  ongoing:    { label:"Ongoing",        color:"var(--teal)"  },
+  waiting:    { label:"Waiting",        color:"var(--amber)" },
+  stuck:      { label:"Stuck",          color:"var(--red)"   },
+  notstarted: { label:"Didn't Start",   color:"var(--xmuted)"},
+  inqueue:    { label:"In Queue",       color:"var(--slate)" }
+};
+
+const OWNER_COLORS = {
+  "Partnership": { c:"var(--teal)",  b:"rgba(94,234,212,.4)"  },
+  "PMM":         { c:"var(--amber)", b:"rgba(245,196,81,.4)"  },
+  "Demand":      { c:"#c9b8ff",      b:"rgba(201,184,255,.4)" },
+  "HR":          { c:"#f2a6c6",      b:"rgba(242,166,198,.4)" },
+  "A-Swot":      { c:"#8ec5ff",      b:"rgba(142,197,255,.4)" },
+};
+
+const PROJECTS = [
+  { name:"Carahsoft marketplace page", status:"live", owner:"Partnership", urgency:"now", scope:"task",
+    next:"Omer to design the brochure for the gated form. Chris & Milli to review and approve the page.",
+    deadline:{type:"eonw"},
+    link:"https://docs.google.com/document/d/1NdWt51ZZdHgqSALgDKf4-VtmRdsmDhaFMxjRIYU2yyk/edit?tab=t.0#heading=h.8bojjyuznt7p" },
+
+  { name:"Quantum readiness", status:"waiting", owner:"PMM", urgency:"now", scope:"task",
+    next:"Duncan to approve.",
+    deadline:{type:"eonw"},
+    link:"https://www.figma.com/design/4jeNSmriKUnxzlNurjao0B/Classiq.io---Final-Version?node-id=6678-6639&t=YxNFfbd3WrkdMpfz-1" },
+
+  { name:"Video content calendar", status:"live", owner:"Demand", urgency:"now", scope:"task",
+    next:"Matan to come up with a plan for the thought-leadership videos.",
+    deadline:{type:"eonw"},
+    link:"https://docs.google.com/document/d/1KN_AIJ7eGLwA4J6bsXArsMF3nSHq4Wo03U74X-GCP94/edit?tab=t.0" },
+
+  { name:"Office hours", status:"ongoing", owner:"Demand", urgency:"now", scope:"project",
+    next:"Working on the intro slides. Omer to design a dedicated logo. Start promoting session 2.",
+    deadline:{type:"recurring", text:"Every 4–6 wks"},
+    link:"https://get.classiq.io/office-hour-webinars/quantum-computing-for-finance/" },
+
+  { name:"Aya vacation coverage", status:"live", owner:"Demand", urgency:"now", scope:"task",
+    next:"Making sure the social media plan is executed.",
+    deadline:{type:"text", text:"August"},
+    link:"https://docs.google.com/document/d/1W3Jmn1Nbj1FIv05kAa_5pCAGyTzSnjBit1l8zx1np2k/edit?tab=t.0" },
+
+  { name:"Ops tasks for Tani", status:"waiting", owner:"Demand", urgency:"now", scope:"task",
+    next:"Approve task prioritization with Monet.",
+    deadline:{type:"eonw"},
+    link:"https://docs.google.com/document/d/1B-iGd7MwxnLkcK0VaVPHaW8FfCjbhtEjO0Su7bi_BRo/edit?tab=t.0" },
+
+  { name:"TL Webinar", status:"stuck", owner:"Demand", urgency:"now", scope:"project",
+    next:"Matan to work on a deck for the TL webinar (Sep–Oct).",
+    deadline:{type:"eonw"},
+    link:"https://docs.google.com/presentation/d/11Jwu9DP_LQSI7t9833AIVho-fy-W1ei8wAx-8jQRWoE/edit?slide=id.p1#slide=id.p1" },
+
+  { name:"SMarketing monthly", status:"notstarted", owner:"Demand", urgency:"soon", scope:"task",
+    next:"Matan to build the deck & meeting flow, approve with Duncan.",
+    deadline:{type:"date", date:"2026-08-16", text:"Sun, Aug 16"},
+    link:"https://docs.google.com/presentation/d/1iGTR70ff1vx_a3URGnQB4Yn9IfRsUJyMUIg81GEH41U/edit?slide=id.p1#slide=id.p1" },
+
+  { name:"Website monthly", status:"notstarted", owner:"Demand", urgency:"later", scope:"task",
+    next:"Matan to build the deck & meeting flow, approve with Duncan.",
+    deadline:{type:"date", date:"2026-08-30", text:"Sun, Aug 30"},
+    link:null },
+
+  { name:"HR videos", status:"notstarted", owner:"HR", urgency:"now", scope:"task",
+    next:"Matan to cut the HR parts for Yam.",
+    deadline:{type:"eonw"},
+    link:null },
+
+  { name:"APAC event app", status:"notstarted", owner:"Demand", urgency:"now", scope:"task",
+    next:"Matan to duplicate the event app and create a dedicated one for APAC with different dropdown lists.",
+    deadline:{type:"eonw"},
+    link:"https://shmil123.github.io/badge-scanner/" },
+
+  { name:"Hardware solution page", status:"stuck", owner:"PMM", urgency:"later", scope:"project",
+    next:"Duncan to review copy.",
+    deadline:{type:"text", text:"TBD"},
+    link:"https://www.figma.com/design/4jeNSmriKUnxzlNurjao0B/Classiq.io---Final-Version?node-id=6701-7402&t=KQJHDeYT5GLWW0FX-1" },
+
+  { name:"Award NSF campaign", status:"inqueue", owner:"A-Swot", urgency:"later", scope:"task",
+    next:"Matan to upload the list to HubSpot + LinkedIn and target them with Alfred content.",
+    deadline:{type:"text", text:"TBD"},
+    link:"https://docs.google.com/spreadsheets/d/19sDZJXoXZMNhC6Jq5Oditnne_-HxYfyq5pBBGHY3qxk/edit?gid=0#gid=0" },
+
+  { name:"Webflow", status:"stuck", owner:"Demand", urgency:"soon", scope:"project",
+    next:"Matan and Omer to come up with a plan for Webflow sections.",
+    deadline:{type:"date", date:"2026-08-20", text:"Aug 20"},
+    link:"https://docs.google.com/document/d/1WV8LF4gdv_W-uMXJIezmXu6gKn3fBik7VweihlL2Aak/edit?tab=t.0" },
+
+  { name:"Website", status:"inqueue", owner:"Demand & PMM", urgency:"later", scope:"project",
+    next:"Matan to come up with a plan to improve the website's usability and structure.",
+    deadline:{type:"text", text:"TBD"},
+    link:null },
+
+  { name:"Summer usage campaign", status:"live", owner:"Guy & Tomer I", urgency:"now", scope:"project",
+    next:[
+      {text:"Matan to work with Omer on the webpage", done:false},
+      {text:"Tomer to finalize the challenge", done:false},
+      {text:"Finalize the T&C with Yossi + approve the targeting list", done:false},
+      {text:"Matan to approve email draft with Duncan", done:false},
+      {text:"Launch the promotion", done:false}
+    ],
+    deadline:{type:"none"},
+    link:null },
+
+  { name:"SLA Lead management", status:"stuck", owner:"Demand & RevOps", urgency:"now", scope:"project",
+    next:"Matan to finalize with Tani and Monet the process from HubSpot to Salesforce, then they'll execute.",
+    deadline:{type:"eonw"},
+    link:"https://classiq.atlassian.net/wiki/spaces/Marketing/pages/1854439430/MQL+Marketing+Qualified+Lead" },
+
+  { name:"Experimentation app", status:"inqueue", owner:"Demand", urgency:"later", scope:"project",
+    next:"Matan to build a gamified app for everyone in marketing to scorecard experimentation.",
+    deadline:{type:"date", date:"2026-08-31", text:"End of Aug"},
+    link:null },
+
+  { name:"Paid MKT strategy", status:"stuck", owner:"Demand", urgency:"later", scope:"project",
+    next:"Matan to build a strategy for brand awareness and lead gen.",
+    deadline:{type:"date", date:"2026-08-31", text:"End of Aug"},
+    link:null },
+
+  { name:"ABM Heiner pilot", status:"live", owner:"Demand", urgency:"now", scope:"project",
+    next:[
+      {text:"Matan to create Slack alerts for engagers", done:false},
+      {text:"Matan to come up with a plan for the ABM list", done:false}
+    ],
+    deadline:{type:"eonw"},
+    link:"https://docs.google.com/spreadsheets/d/16rz2iN6ejJZGEgcpQNQIrRns-iYclJhgv416M64Kzbk/edit?gid=921590071#gid=921590071" },
+
+  { name:"Event emails", status:"waiting", owner:"Demand", urgency:"later", scope:"task",
+    next:[
+      {text:"Emails for Q2B Copenhagen, QWC, Bitkom", done:false},
+      {text:"Calendly for events (Tani)", done:false}
+    ],
+    deadline:{type:"recurring", text:"2–3 wks ahead"},
+    link:null },
+];
+
+/* ---------- deadline rendering ---------- */
+function deadlineChip(d){
+  if(!d || d.type==="none") return "";
+  if(d.type==="eonw") return `<span class="deadline eonw">EONW</span>`;
+  if(d.type==="recurring") return `<span class="deadline recurring">↻ ${d.text}</span>`;
+  if(d.type==="text") return `<span class="deadline text">${d.text}</span>`;
+  if(d.type==="date"){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const due = new Date(d.date+"T00:00:00");
+    const days = Math.round((due-today)/86400000);
+    let cls="ok", label=d.text;
+    if(days<0){ cls="urgent"; label=`${d.text} · overdue`; }
+    else if(days===0){ cls="urgent"; label=`${d.text} · today`; }
+    else if(days<=5){ cls="urgent"; label=`${d.text} · ${days}d`; }
+    else if(days<=10){ cls="soon"; label=`${d.text} · ${days}d`; }
+    return `<span class="deadline ${cls}">${label}</span>`;
+  }
+  return "";
+}
+
+function ownerTagStyle(owner){
+  const o = OWNER_COLORS[owner];
+  return o ? `color:${o.c};border-color:${o.b};` : "";
+}
+
+function stepsProgress(next){
+  if(!Array.isArray(next)) return null;
+  const total = next.length;
+  const done = next.filter(s=>s.done).length;
+  return { done, total, pct: total ? Math.round(done/total*100) : 0 };
+}
+
+/* compact preview shown on the card face — full checklist lives in the click-to-open modal */
+function nextHtml(next){
+  if(Array.isArray(next)){
+    const { done, total, pct } = stepsProgress(next);
+    const nextUp = next.find(s=>!s.done);
+    return `
+      <div class="pprogress">
+        <div class="pprogress-top"><span>${done}/${total} steps done</span><span>${pct}%</span></div>
+        <div class="pbar-track"><div class="pbar-fill" style="width:${pct}%"></div></div>
+        <div class="pprogress-next">${nextUp ? "Next: "+nextUp.text : "All steps done"}</div>
+      </div>`;
+  }
+  return `<div class="pnext">${next}</div>`;
+}
+
+/* ---------- priority queue (manual pin, persisted per-browser) ---------- */
+const PIN_STORAGE_KEY = "mw_dashboard_pinned";
+const DEFAULT_PINNED = ["Summer usage campaign","Aya vacation coverage","Office hours","HR videos","Carahsoft marketplace page"];
+const savedPins = localStorage.getItem(PIN_STORAGE_KEY);
+let pinned = new Set(savedPins ? JSON.parse(savedPins) : DEFAULT_PINNED);
+
+function togglePin(name){
+  if(pinned.has(name)) pinned.delete(name); else pinned.add(name);
+  localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify([...pinned]));
+  renderPriorityQueue();
+  renderBoard();
+}
+
+/* single delegated listener — survives innerHTML rebuilds without ever double-attaching */
+document.addEventListener("click", (e)=>{
+  const pinBtn = e.target.closest(".pin-btn");
+  if(pinBtn){ e.stopPropagation(); togglePin(pinBtn.dataset.name); return; }
+
+  if(e.target.closest(".plink")) return; // let the link open normally, don't open the modal too
+
+  if(e.target.id==="modalCloseBtn" || e.target.id==="modalOverlay"){ closeModal(); return; }
+
+  const card = e.target.closest(".pcard, .pq-item");
+  if(card && card.dataset.name) openModal(card.dataset.name);
+});
+
+function renderPriorityQueue(){
+  const items = PROJECTS.filter(p=>pinned.has(p.name));
+  const el = document.getElementById("priorityQueue");
+  if(!items.length){
+    el.innerHTML = `<div class="pq-empty">Nothing pinned yet — click ★ on any card below to add it here.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="pq-list">${items.map(p=>`
+    <div class="pq-item" data-name="${p.name}">
+      <div>
+        <div class="pq-name">${p.name}</div>
+        <div class="pq-meta">${STATUS_CONFIG[p.status].label} · ${p.owner}</div>
+      </div>
+      <button class="pin-btn pinned" data-name="${p.name}" title="Unpin">★</button>
+    </div>`).join("")}</div>`;
+}
+
+/* ---------- click-to-open detail modal ---------- */
+function openModal(name){
+  const p = PROJECTS.find(x=>x.name===name);
+  if(!p) return;
+  const cfg = STATUS_CONFIG[p.status];
+  const isArray = Array.isArray(p.next);
+  const prog = isArray ? stepsProgress(p.next) : null;
+
+  const stepsSection = isArray
+    ? `<div class="modal-section-label">Steps</div>
+       <div class="modal-progress-top"><span>${prog.done} of ${prog.total} done</span><span>${prog.pct}%</span></div>
+       <div class="pbar-track"><div class="pbar-fill" style="width:${prog.pct}%"></div></div>
+       <div style="margin-top:10px;">${p.next.map(s=>`
+         <div class="step-row${s.done?" done":""}">
+           <span class="step-check">${s.done?"✓":""}</span>
+           <span class="step-text">${s.text}</span>
+         </div>`).join("")}</div>`
+    : `<div class="modal-section-label">Next step</div><div class="modal-next">${p.next}</div>`;
+
+  document.getElementById("modalBox").innerHTML = `
+    <button class="modal-close" id="modalCloseBtn" title="Close">×</button>
+    <div class="modal-title">${p.name}</div>
+    <div class="modal-tags">
+      <span class="modal-status"><span class="dot" style="background:${cfg.color};"></span>${cfg.label}</span>
+      <span class="tag" style="${ownerTagStyle(p.owner)}">${p.owner}</span>
+      <span class="scope-badge ${p.scope}">${p.scope==="project"?"Project":"Task"}</span>
+    </div>
+    ${stepsSection}
+    <div class="modal-foot">
+      ${deadlineChip(p.deadline)}
+      ${p.link ? `<a class="plink" href="${p.link}" target="_blank" rel="noopener">Open ↗</a>` : `<span class="plink disabled">No link yet</span>`}
+    </div>`;
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+function closeModal(){
+  document.getElementById("modalOverlay").classList.remove("open");
+}
+
+document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
+
+/* ---------- shared owner/scope/timeline filters ---------- */
+let activeOwner = "All";
+let activeScope = "All";
+let activeUrgencyFilter = "All";
+
+function hardScoped(){
+  return PROJECTS.filter(p =>
+    (activeOwner==="All" || p.owner===activeOwner) &&
+    (activeScope==="All" || p.scope===activeScope) &&
+    (activeUrgencyFilter==="All" || p.urgency===activeUrgencyFilter)
+  );
+}
+
+/* count matching a candidate value for one dimension, holding the other two filters fixed */
+function countFor(dimension, value){
+  return PROJECTS.filter(p=>{
+    if(dimension!=="owner"    && activeOwner!=="All"          && p.owner!==activeOwner) return false;
+    if(dimension!=="scope"    && activeScope!=="All"          && p.scope!==activeScope) return false;
+    if(dimension!=="urgency"  && activeUrgencyFilter!=="All"  && p.urgency!==activeUrgencyFilter) return false;
+    if(value==="All") return true;
+    return p[dimension]===value;
+  }).length;
+}
+
+const TIMELINE_OPTIONS = [["All","All"],["now","Due This Week"],["soon","Due Next Week"],["later","Due Later / TBD"]];
+const SCOPE_OPTIONS = [["All","All"],["task","Task"],["project","Project"]];
+
+function renderFilters(){
+  const ownerValues = ["All", ...Array.from(new Set(PROJECTS.map(p=>p.owner)))];
+  const ownerSel = document.getElementById("ownerSelect");
+  ownerSel.innerHTML = ownerValues.map(o=>`<option value="${o}">${o} (${countFor("owner",o)})</option>`).join("");
+  ownerSel.value = activeOwner;
+
+  const scopeSel = document.getElementById("scopeSelect");
+  scopeSel.innerHTML = SCOPE_OPTIONS.map(([key,label])=>`<option value="${key}">${label} (${countFor("scope",key)})</option>`).join("");
+  scopeSel.value = activeScope;
+
+  const timeSel = document.getElementById("timelineSelect");
+  timeSel.innerHTML = TIMELINE_OPTIONS.map(([key,label])=>`<option value="${key}">${label} (${countFor("urgency",key)})</option>`).join("");
+  timeSel.value = activeUrgencyFilter;
+}
+
+/* ---------- status stat tiles ---------- */
+const STAT_DEFS = [
+  { key:"all",              label:"Total Projects",       statuses:null,                 cls:"",      sub:"across current filters — click to reset" },
+  { key:"liveOngoing",      label:"Live / Ongoing",       statuses:["live","ongoing"],   cls:"lime",  sub:"shipped or in progress" },
+  { key:"waiting",          label:"Waiting on Others",    statuses:["waiting"],          cls:"amber", sub:"blocked on approval / input" },
+  { key:"stuckNotstarted",  label:"Needs Attention",      statuses:["stuck","notstarted","inqueue"], cls:"red", sub:"stuck, not started, or queued" },
+];
+let activeStatFilter = "all";
+
+function renderStats(){
+  const scoped = hardScoped();
+  document.getElementById("stats").innerHTML = STAT_DEFS.map(s=>{
+    const value = s.statuses ? scoped.filter(p=>s.statuses.includes(p.status)).length : scoped.length;
+    return `
+    <div class="stat${activeStatFilter===s.key?" active":""}" data-key="${s.key}">
+      <div class="label">${s.label}</div>
+      <div class="value ${s.cls}">${value}</div>
+      <div class="sub">${s.sub}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("#stats .stat").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const key = el.dataset.key;
+      activeStatFilter = (activeStatFilter===key) ? "all" : key;
+      renderStats(); renderBoard();
+    });
+  });
+}
+
+/* ---------- board ---------- */
+function renderBoard(){
+  const scoped = hardScoped();
+  const statDef = STAT_DEFS.find(s=>s.key===activeStatFilter);
+  document.getElementById("board").innerHTML = STATUS_ORDER.map(statusKey=>{
+    const cfg = STATUS_CONFIG[statusKey];
+    const items = scoped.filter(p=>p.status===statusKey);
+    const cardsHtml = items.length
+      ? items.map(p=>{
+          const dim = statDef.statuses && !statDef.statuses.includes(p.status);
+          const isPinned = pinned.has(p.name);
+          return `
+      <div class="pcard urgency-${p.urgency}${dim?" dim":""}${isPinned?" pinned":""}" data-name="${p.name}">
+        <div class="ptitle-row">
+          <div class="ptitle">${p.name}</div>
+          <button class="pin-btn${isPinned?" pinned":""}" data-name="${p.name}" title="${isPinned?"Unpin":"Pin as priority"}">${isPinned?"★":"☆"}</button>
+        </div>
+        <div class="ptags">
+          <span class="tag" style="${ownerTagStyle(p.owner)}">${p.owner}</span>
+          <span class="scope-badge ${p.scope}">${p.scope==="project"?"Project":"Task"}</span>
+        </div>
+        ${nextHtml(p.next)}
+        <div class="pfoot">
+          ${deadlineChip(p.deadline)}
+          ${p.link ? `<a class="plink" href="${p.link}" target="_blank" rel="noopener">Open ↗</a>` : `<span class="plink disabled">No link yet</span>`}
+        </div>
+      </div>`;
+        }).join("")
+      : `<div class="col-empty">No projects</div>`;
+    return `
+      <div class="col">
+        <div class="col-head">
+          <span class="col-dot" style="background:${cfg.color};"></span>
+          <span class="col-title">${cfg.label}</span>
+          <span class="col-count">${items.length}</span>
+        </div>
+        ${cardsHtml}
+      </div>`;
+  }).join("");
+}
+
+document.getElementById("updatedStamp").textContent = "Updated " + new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+
+["timelineSelect","ownerSelect","scopeSelect"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", (e)=>{
+    if(id==="timelineSelect") activeUrgencyFilter = e.target.value;
+    if(id==="ownerSelect") activeOwner = e.target.value;
+    if(id==="scopeSelect") activeScope = e.target.value;
+    renderFilters(); renderStats(); renderBoard();
+  });
+});
+
+renderFilters();
+renderStats();
+renderPriorityQueue();
+renderBoard();
+</script>
+</body>
+</html>
