@@ -2,7 +2,9 @@
 
 Kanban-style status board for Matan's DemandGen projects — built for the weekly 1:1 with his manager.
 
-**Open:** `index.html` in any browser (double-click, or `open index.html`).
+**Live URL:** https://shmil123.github.io/demandgen-dashboard/ — this is what gets shared with his manager.
+
+**Local file:** `docs/index.html` (open directly in a browser to preview before deploying — double-click, or `open docs/index.html`). The file lives under `docs/` (not the repo root) because GitHub Pages is configured to serve from `main` branch, `/docs` path — same convention as `badge-scanner/`.
 
 ## What it shows
 - **Timeline / Ownership / Scope of work** — 3 dropdowns above the board, each showing live counts; they combine (hard filter — non-matching cards drop out of the board entirely)
@@ -14,6 +16,14 @@ Kanban-style status board for Matan's DemandGen projects — built for the weekl
 - Deadline chips — dated deadlines auto-flag as "soon" (≤10d) or "urgent" (≤5d/overdue) based on today's date
 
 ## Updating it
-All project data lives in the `PROJECTS` array inside `index.html`'s `<script>` block. Each project has `status`, `owner`, `urgency` (now/soon/later), `scope` (task/project), `deadline`, `link`, and `next`. `next` is either a plain string (single next step, no tracking) or an array of `{text, done}` objects for multi-step projects — flip `done` to `true` as Matan reports progress on each step. Edit that array (or ask Claude to) whenever any of these change — no build step, just save and refresh.
+All project data lives in the `PROJECTS` array inside `docs/index.html`'s `<script>` block. Each project has `status`, `owner`, `urgency` (now/soon/later), `scope` (task/project), `deadline`, `link`, and `next`. `next` is either a plain string (single next step, no tracking) or an array of `{text, done}` objects for multi-step projects — flip `done` to `true` as Matan reports progress on each step. Edit that array (or ask Claude to) whenever any of these change — no build step, just save and refresh locally.
+
+## Deploying
+Editing the local file does **not** update the live URL by itself — it only updates once pushed. Deploy with:
+```
+cd demandgen-dashboard
+git add -A && git commit -m "update dashboard" && git push
+```
+GitHub Pages rebuilds automatically, usually live within ~30–60 seconds. Matan's workflow: he edits/asks Claude to edit the dashboard locally over multiple turns, then explicitly asks to "update/deploy the dashboard online" — only then should this push happen, not after every single local edit.
 
 Tracked in memory: `project_demandgen_dashboard.md`
