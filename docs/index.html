@@ -13,7 +13,7 @@
     --border:#333330; --border-soft:#2b2b28;
     --text:#f5f5f0; --muted:#9d9d94; --xmuted:#6f6f68;
     --lime:#D7F75B; --lime-dim:rgba(215,247,91,.16); --lime-deep:#aac741;
-    --teal:#5eead4; --amber:#f5c451; --red:#f87171; --slate:#7ba7d1;
+    --teal:#5eead4; --amber:#f5c451; --red:#f87171; --slate:#7ba7d1; --done:#7ec98f;
     --radius:10px;
     --font:'Lato',system-ui,-apple-system,sans-serif;
   }
@@ -59,7 +59,7 @@
   .filter-group select:focus{outline:none;border-color:var(--lime);}
   .filter-group select option{background:var(--panel);color:var(--text);}
 
-  .board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;align-items:start;margin-top:22px;}
+  .board{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px;align-items:start;margin-top:22px;}
   .col{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:12px;min-height:60px;}
   .col-head{display:flex;align-items:center;gap:8px;padding:2px 4px 12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
   .col-dot{width:9px;height:9px;border-radius:50%;flex:none;}
@@ -74,6 +74,7 @@
   .pcard.urgency-now{border-left-color:var(--red);}
   .pcard.urgency-soon{border-left-color:var(--amber);}
   .pcard.urgency-later{border-left-color:var(--xmuted);}
+  .pcard.is-done{border-left-color:var(--done);opacity:.75;}
   .pcard.pinned{border-color:var(--lime);box-shadow:0 0 0 1px rgba(215,247,91,.25);}
   .ptitle-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
   .pcard .ptitle{font-size:13.5px;font-weight:900;letter-spacing:-.005em;line-height:1.3;}
@@ -137,8 +138,13 @@
   .step-row.done .step-check{background:var(--lime);border-color:var(--lime);color:#191919;}
   .step-row.done .step-text{color:var(--xmuted);text-decoration:line-through;text-decoration-color:var(--border);}
   .step-text{font-size:13px;line-height:1.5;padding-top:1px;}
-  .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+  .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);flex-wrap:wrap;}
   .modal-foot .plink{font-size:12.5px;}
+  .modal-foot-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .done-toggle-btn{font-family:var(--font);font-size:11.5px;font-weight:800;letter-spacing:.02em;padding:7px 14px;border-radius:999px;cursor:pointer;border:1px solid var(--lime);background:var(--lime);color:#191919;transition:all .12s ease;}
+  .done-toggle-btn:hover{background:var(--lime-deep);}
+  .done-toggle-btn.is-done{background:transparent;color:var(--muted);border-color:var(--border);}
+  .done-toggle-btn.is-done:hover{border-color:#54544c;color:var(--text);}
 
   @media (max-width:1300px){.board{grid-template-columns:repeat(3,1fr);}}
   @media (max-width:1100px){.stats{grid-template-columns:repeat(2,1fr);}}
@@ -190,7 +196,7 @@
     <div class="board" id="board"></div>
 
     <div class="foot">
-      <b>How to use:</b> click any card to open it and see the full step-by-step checklist — done steps are checked off, what's left shows what's still missing. Click ★ to pin it to your Priority Queue up top — that's yours to arrange your schedule, independent of status or deadline, and it's saved in this browser. Use the Timeline / Ownership / Scope dropdowns to filter the board — they combine. Click a "Status Overview" tile to highlight matching cards (click again to reset).
+      <b>How to use:</b> click any card to open it and see the full step-by-step checklist — done steps are checked off, what's left shows what's still missing. Inside, click "✓ Mark as Done" to move the whole project to the <b>Done</b> column (click "↺ Reopen" to bring it back). Click ★ to pin it to your Priority Queue up top — that's yours to arrange your schedule, independent of status or deadline, and it's saved in this browser. Use the Timeline / Ownership / Scope dropdowns to filter the board — they combine. Click a "Status Overview" tile to highlight matching cards (click again to reset).
       The colored left edge of each card shows urgency: <span class="legend"><span><span class="dot" style="background:var(--red);"></span>due this week</span><span><span class="dot" style="background:var(--amber);"></span>due next week</span><span><span class="dot" style="background:var(--xmuted);"></span>due later / TBD</span></span>
       <br><br>
       This file is manually maintained — edit the <code>PROJECTS</code> array in the script, or ask Claude to update it, whenever a status, urgency, or next step changes.
@@ -203,14 +209,15 @@
 </div>
 
 <script>
-const STATUS_ORDER = ["live","ongoing","waiting","stuck","notstarted","inqueue"];
+const STATUS_ORDER = ["live","ongoing","waiting","stuck","notstarted","inqueue","done"];
 const STATUS_CONFIG = {
   live:       { label:"Live",           color:"var(--lime)"  },
   ongoing:    { label:"Ongoing",        color:"var(--teal)"  },
   waiting:    { label:"Waiting",        color:"var(--amber)" },
   stuck:      { label:"Stuck",          color:"var(--red)"   },
   notstarted: { label:"Didn't Start",   color:"var(--xmuted)"},
-  inqueue:    { label:"In Queue",       color:"var(--slate)" }
+  inqueue:    { label:"In Queue",       color:"var(--slate)" },
+  done:       { label:"Done",           color:"var(--done)"  }
 };
 
 const OWNER_COLORS = {
@@ -400,10 +407,33 @@ function togglePin(name){
   renderBoard();
 }
 
+/* ---------- done tracking (manual, persisted per-browser — overrides the status column, not the underlying data) ---------- */
+const DONE_STORAGE_KEY = "mw_dashboard_done";
+let doneSet = new Set(JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) || "[]"));
+
+function effectiveStatus(p){
+  return doneSet.has(p.name) ? "done" : p.status;
+}
+
+function toggleDone(name){
+  if(doneSet.has(name)){
+    doneSet.delete(name);
+  } else {
+    doneSet.add(name);
+    if(pinned.has(name)){ pinned.delete(name); localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify([...pinned])); }
+  }
+  localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify([...doneSet]));
+  renderFilters(); renderStats(); renderPriorityQueue(); renderBoard();
+  closeModal();
+}
+
 /* single delegated listener — survives innerHTML rebuilds without ever double-attaching */
 document.addEventListener("click", (e)=>{
   const pinBtn = e.target.closest(".pin-btn");
   if(pinBtn){ e.stopPropagation(); togglePin(pinBtn.dataset.name); return; }
+
+  const doneBtn = e.target.closest(".done-toggle-btn");
+  if(doneBtn){ e.stopPropagation(); toggleDone(doneBtn.dataset.name); return; }
 
   if(e.target.closest(".plink")) return; // let the link open normally, don't open the modal too
 
@@ -424,7 +454,7 @@ function renderPriorityQueue(){
     <div class="pq-item" data-name="${p.name}">
       <div>
         <div class="pq-name">${p.name}</div>
-        <div class="pq-meta">${STATUS_CONFIG[p.status].label} · ${p.owner}</div>
+        <div class="pq-meta">${STATUS_CONFIG[effectiveStatus(p)].label} · ${p.owner}</div>
       </div>
       <button class="pin-btn pinned" data-name="${p.name}" title="Unpin">★</button>
     </div>`).join("")}</div>`;
@@ -434,7 +464,8 @@ function renderPriorityQueue(){
 function openModal(name){
   const p = PROJECTS.find(x=>x.name===name);
   if(!p) return;
-  const cfg = STATUS_CONFIG[p.status];
+  const isDone = doneSet.has(p.name);
+  const cfg = STATUS_CONFIG[effectiveStatus(p)];
   const isArray = Array.isArray(p.next);
   const prog = isArray ? stepsProgress(p.next) : null;
 
@@ -459,8 +490,11 @@ function openModal(name){
     </div>
     ${stepsSection}
     <div class="modal-foot">
-      ${deadlineChip(p.deadline)}
-      ${p.link ? `<a class="plink" href="${p.link}" target="_blank" rel="noopener">Open ↗</a>` : `<span class="plink disabled">No link yet</span>`}
+      <div class="modal-foot-left">
+        ${deadlineChip(p.deadline)}
+        ${p.link ? `<a class="plink" href="${p.link}" target="_blank" rel="noopener">Open ↗</a>` : `<span class="plink disabled">No link yet</span>`}
+      </div>
+      <button class="done-toggle-btn${isDone?" is-done":""}" data-name="${p.name}">${isDone ? "↺ Reopen" : "✓ Mark as Done"}</button>
     </div>`;
   document.getElementById("modalOverlay").classList.add("open");
 }
@@ -525,7 +559,7 @@ let activeStatFilter = "all";
 function renderStats(){
   const scoped = hardScoped();
   document.getElementById("stats").innerHTML = STAT_DEFS.map(s=>{
-    const value = s.statuses ? scoped.filter(p=>s.statuses.includes(p.status)).length : scoped.length;
+    const value = s.statuses ? scoped.filter(p=>s.statuses.includes(effectiveStatus(p))).length : scoped.length;
     return `
     <div class="stat${activeStatFilter===s.key?" active":""}" data-key="${s.key}">
       <div class="label">${s.label}</div>
@@ -548,13 +582,16 @@ function renderBoard(){
   const statDef = STAT_DEFS.find(s=>s.key===activeStatFilter);
   document.getElementById("board").innerHTML = STATUS_ORDER.map(statusKey=>{
     const cfg = STATUS_CONFIG[statusKey];
-    const items = scoped.filter(p=>p.status===statusKey);
+    const items = scoped.filter(p=>effectiveStatus(p)===statusKey);
     const cardsHtml = items.length
       ? items.map(p=>{
-          const dim = statDef.statuses && !statDef.statuses.includes(p.status);
+          const eff = effectiveStatus(p);
+          const dim = statDef.statuses && !statDef.statuses.includes(eff);
           const isPinned = pinned.has(p.name);
+          const isDone = doneSet.has(p.name);
+          const urgencyCls = isDone ? "is-done" : `urgency-${p.urgency}`;
           return `
-      <div class="pcard urgency-${p.urgency}${dim?" dim":""}${isPinned?" pinned":""}" data-name="${p.name}">
+      <div class="pcard ${urgencyCls}${dim?" dim":""}${isPinned?" pinned":""}" data-name="${p.name}">
         <div class="ptitle-row">
           <div class="ptitle">${p.name}</div>
           <button class="pin-btn${isPinned?" pinned":""}" data-name="${p.name}" title="${isPinned?"Unpin":"Pin as priority"}">${isPinned?"★":"☆"}</button>

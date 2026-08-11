@@ -9,7 +9,8 @@ Kanban-style status board for Matan's DemandGen projects — built for the weekl
 ## What it shows
 - **Timeline / Ownership / Scope of work** — 3 dropdowns above the board, each showing live counts; they combine (hard filter — non-matching cards drop out of the board entirely)
 - **Status Overview** tiles: total, live/ongoing, waiting on others, needs attention — click a tile to highlight (dim, not hide) matching cards, click again to reset
-- Board grouped by status (Live → Ongoing → Waiting → Stuck → Didn't Start → In Queue)
+- Board grouped by status (Live → Ongoing → Waiting → Stuck → Didn't Start → In Queue → Done)
+- Inside a card's detail modal, click "✓ Mark as Done" to move it to the **Done** column (or "↺ Reopen" to bring it back) — saved to this browser via localStorage, same as pinning. ⚠️ This does NOT change the underlying `PROJECTS` data or the deployed site — it's a personal, per-browser override. If Matan wants a project to show as Done for his manager too, he needs to say so explicitly so the `status` field gets set to `"done"` in the data and redeployed
 - Each card's left edge is colored by urgency (red = due this week, amber = due next week, gray = due later/TBD) — same meaning as the Timeline dropdown
 - Click ★ on any card to pin it to "Your Priority Queue" at the top — a personal, click-driven priority list independent of status/deadline, saved to this browser via localStorage
 - Click anywhere else on a card (or a Priority Queue item) to open a detail modal — for multi-step projects it shows a checklist with done/pending steps and a progress bar; for single-line projects it just shows the next step
